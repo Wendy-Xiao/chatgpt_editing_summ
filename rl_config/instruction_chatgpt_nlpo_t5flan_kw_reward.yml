@@ -1,0 +1,85 @@
+tokenizer:
+  model_name: "PATH/TO/THE/TOKENIZER"
+  padding_side: right
+  truncation_side: right
+  pad_token_as_eos_token: False
+
+reward_fn:
+  # id: gpt_summ_reward
+  id: gpt_summ_reward_batch
+  args:
+    use_all_keywords: True
+    openai_api: "<place holder>"
+    gpt_engine: "<place holder>"
+    kw_model_device: 4
+    beta: 5
+    lambd: 10
+
+datapool:
+  id: instruction
+  args:
+    data_path: "./data/cnndm_gptsumm_chatgpt"
+    data_name: "cnndm_chatgptsumm_with_kw"
+
+
+env:
+  n_envs: 8
+  args:
+    max_prompt_length: 1024
+    max_episode_length: 100
+    terminate_on_eos: True
+    prompt_truncation_side: "right"
+    context_start_token: 0
+
+alg:
+  id: nlpo
+  args:
+    n_steps: 256
+    batch_size: 4
+    verbose: 1
+    learning_rate: 0.000002
+    n_epochs: 5
+    ent_coef: 0.0
+  kl_div:
+    coeff: 0.001
+    target_kl: 0.2
+  policy:
+    id: maskable_seq2seq_lm_actor_critic_policy
+    args:
+      model_name: "PATH/TO/SUPERVISED/MODEL"
+      apply_model_parallel: True
+      prompt_truncation_side: "right"
+      min_tokens_to_keep: 100
+      top_mask: 0.9
+      mask_type: "learned_top_p"
+      target_update_iterations: 30
+      generation_kwargs:
+        do_sample: True
+        top_k: 50
+        min_length: 0
+        max_new_tokens: 30
+        temperature: 0.5
+        num_beams: 1
+
+train_evaluation:
+  eval_batch_size: 8
+  n_iters: 100
+  eval_every: 2
+  save_every: 2
+  metrics:
+    - id: gpt_summ_rouge
+      args:
+        use_all_keywords: True
+        openai_api: "<place holder>"
+        gpt_engine: "<place holder>"
+        kw_model_device: 5
+
+  generation_kwargs: 
+    do_sample: True
+    num_beams: 1
+    top_k: 10
+    temperature: 0.1
+    min_length: 0
+    max_new_tokens: 30
+    
+
